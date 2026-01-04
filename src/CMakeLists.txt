@@ -1,7 +1,6 @@
 add_library(Message-Relay STATIC
     core/Client.c
     core/ProcessingServer.c
-    net/tcpServer.c
     utils/parse.c
     utils/safe_io.c
 )

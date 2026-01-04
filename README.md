@@ -1,9 +1,12 @@
 # Message-Relay
 
-Client-server message relay in pure C.
+Client-server message relay in C.
+
+## Features
+- Supports connections of multiple clients
 
 ## Architecture
-- ProcessingServer: TCP server, accepts client connections, receives clients' messages and writes them in console
+- ProcessingServer: TCP server, accepts client connections, receives clients messages and writes them in console
 - Client: TCP client, connects to ProcessingServer and sends text messages
 
 ## Build
@@ -21,5 +24,5 @@ src/run_Client 127.0.0.1 8080
 ```
 
 ## Features To Implement
-- Multi-client support
+- Use epoll instead of select
 - Add middle processing server

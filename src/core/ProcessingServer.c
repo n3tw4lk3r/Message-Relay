@@ -5,11 +5,11 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include "core/DisplayServer.h"
+#include "core/ProcessingServer.h"
 #include "net/TcpServer.h"
 #include "utils/safe_io.h"
 
-void display_server_init(DisplayServer *server, int port, int *error_flag) {
+void ProcessingServer_init(ProcessingServer *server, int port, int *error_flag) {
     if (error_flag) {
         *error_flag = 0;
     }
@@ -31,7 +31,7 @@ void display_server_init(DisplayServer *server, int port, int *error_flag) {
     }
 }
 
-void display_server_run(DisplayServer *server) {
+void ProcessingServer_run(ProcessingServer *server) {
     if (!server) {
         return;
     }
@@ -50,18 +50,18 @@ void display_server_run(DisplayServer *server) {
             continue;
         }
 
-        handle_client(client_file_descriptor, &client_address);
+        ProcessingServer_handle_client(client_file_descriptor, &client_address);
         close(client_file_descriptor);
     }
 }
 
-void display_server_destroy(DisplayServer *server) {
+void ProcessingServer_destroy(ProcessingServer *server) {
     if (server->listen_file_descriptor >= 0) {
         close(server->listen_file_descriptor);
     }
 }
 
-void handle_client(int client_file_descriptor, const struct sockaddr_in *client_addr) {
+void ProcessingServer_handle_client(int client_file_descriptor, const struct sockaddr_in *client_addr) {
     char ip[INET_ADDRSTRLEN];
 
     if (!inet_ntop(AF_INET, &client_addr->sin_addr, ip, sizeof(ip))) {

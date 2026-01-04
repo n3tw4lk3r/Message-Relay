@@ -1,9 +1,9 @@
-#include "executables/run_DisplayServer.h"
+#include "executables/run_ProcessingServer.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "core/DisplayServer.h"
+#include "core/ProcessingServer.h"
 #include "utils/parse.h"
 
 int main(int argc, char **argv) {
@@ -20,10 +20,10 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    DisplayServer server = { .listen_file_descriptor = -1 };
+    ProcessingServer server = { .listen_file_descriptor = -1 };
 
     int init_error = 0;
-    display_server_init(&server, port, &init_error);
+    ProcessingServer_init(&server, port, &init_error);
     
     if (init_error != 0) {
         perror("server init");
@@ -32,8 +32,8 @@ int main(int argc, char **argv) {
 
     printf("Server listening on port %d\n", port);
 
-    display_server_run(&server);
-    display_server_destroy(&server);
+    ProcessingServer_run(&server);
+    ProcessingServer_destroy(&server);
 
     return EXIT_SUCCESS;
 }

@@ -1,6 +1,6 @@
 add_library(Message-Relay STATIC
     core/Client.c
-    core/DisplayServer.c
+    core/ProcessingServer.c
     net/tcpServer.c
     utils/parse.c
     utils/safe_io.c
@@ -19,10 +19,10 @@ target_link_libraries(run_Client
     PRIVATE Message-Relay 
 )
 
-add_executable(run_DisplayServer
-    executables/run_DisplayServer.c
+add_executable(run_ProcessingServer
+    executables/run_ProcessingServer.c
 )
 
-target_link_libraries(run_DisplayServer
+target_link_libraries(run_ProcessingServer
   PRIVATE Message-Relay 
 )

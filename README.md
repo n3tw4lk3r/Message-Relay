@@ -3,8 +3,8 @@
 Client-server message relay in pure C.
 
 ## Architecture
-- DisplayServer: TCP server, accepts client connections, receives clients' messages and writes them in console
-- Client: TCP client, connects to server and send text messages
+- ProcessingServer: TCP server, accepts client connections, receives clients' messages and writes them in console
+- Client: TCP client, connects to ProcessingServer and sends text messages
 
 ## Build
 ```bash
@@ -16,7 +16,7 @@ make -j$(nproc)
 ## Usage example
 ```bash
 # in build/
-src/run_DisplayServer 8080
+src/run_ProcessingServer 8080
 src/run_Client 127.0.0.1 8080
 ```
 

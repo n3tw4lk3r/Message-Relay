@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <netinet/in.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -9,26 +10,41 @@
 #include "core/ProcessingServer.h"
 #include "utils/safe_io.h"
 
+struct ClientNode {
+    int file_descriptor;
+    struct sockaddr_in address;
+    struct ClientNode *next;
+};
+
 void ProcessingServer_init(ProcessingServer *server, int port, int *error_flag) {
     if (error_flag) {
         *error_flag = 0;
     }
-    
+
     if (!server || port <= 0 || port > 65535) {
         if (error_flag) {
             *error_flag = 1;
         }
         return;
     }
-    
+
+    memset(server, 0, sizeof(*server));
     server->port = port;
-    
-    int socket_error = 0;
-    server->listen_file_descriptor = ProcessingServer_create_listening_socket(port, &socket_error);
-    
-    if (socket_error != 0 && error_flag) {
-        *error_flag = socket_error;
+
+    server->listen_file_descriptor = ProcessingServer_create_listening_socket(port, error_flag);
+
+    if (server->listen_file_descriptor < 0) {
+        if (error_flag) {
+            *error_flag = 1;
+        }
+        return;
     }
+
+    FD_ZERO(&server->master_file_descriptor_set);
+    FD_SET(server->listen_file_descriptor, &server->master_file_descriptor_set);
+    server->max_file_descriptor = server->listen_file_descriptor;
+
+    pthread_mutex_init(&server->mutex, NULL);
 }
 
 int ProcessingServer_create_listening_socket(int port, int *error_flag) {
@@ -78,7 +94,7 @@ int ProcessingServer_create_listening_socket(int port, int *error_flag) {
     return file_descriptor;
 }
 
-int ProcessingServer_accept_client(int listen_file_descriptor, struct sockaddr_in *client_address, int *error_flag) {
+int ProcessingServer_accept_connection(int listen_file_descriptor, struct sockaddr_in *client_address, int *error_flag) {
     if (error_flag) {
         *error_flag = 0;
     }
@@ -101,83 +117,118 @@ void ProcessingServer_run(ProcessingServer *server) {
     if (!server) {
         return;
     }
-    
+
     while (1) {
-        struct sockaddr_in client_address;
-        int accept_error = 0;
-        int client_file_descriptor = ProcessingServer_accept_client(server->listen_file_descriptor, &client_address, &accept_error);
-        
-        if (accept_error != 0) {
-            perror("accept");
-            continue;
-        }
-        
-        if (client_file_descriptor < 0) {
-            continue;
+        fd_set read_file_descriptor = server->master_file_descriptor_set;
+
+        int is_ready = select(server->max_file_descriptor + 1, &read_file_descriptor, NULL, NULL, NULL);
+        if (is_ready < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            perror("select");
+            break;
         }
 
-        ProcessingServer_handle_client(client_file_descriptor, &client_address);
-        close(client_file_descriptor);
+        if (FD_ISSET(server->listen_file_descriptor, &read_file_descriptor)) {
+            struct sockaddr_in client_address;
+            int error = 0;
+            int client_fd = ProcessingServer_accept_connection(server->listen_file_descriptor, &client_address, &error);
+
+            if (client_fd >= 0) {
+                ProcessingServer_attach_client(server, client_fd, &client_address);
+
+                char ip[INET_ADDRSTRLEN];
+                inet_ntop(AF_INET, &client_address.sin_addr, ip, sizeof(ip));
+                unsigned short port = ntohs(client_address.sin_port);
+                printf("Client connected: %s:%d\n", ip, port);
+            }
+        }
+
+        ClientNode *client = server->clients;
+        while (client) {
+            int file_descriptor = client->file_descriptor;
+            ClientNode *next = client->next;
+
+            if (FD_ISSET(file_descriptor, &read_file_descriptor)) {
+                char buffer[BUFSIZ];
+                int error = 0;
+                ssize_t n = safe_read(file_descriptor, buffer, sizeof(buffer) - 1, &error);
+
+                if (n <= 0 || error) {
+                    char ip[INET_ADDRSTRLEN];
+                    inet_ntop(AF_INET, &client->address.sin_addr, ip, sizeof(ip));
+                    unsigned short port = ntohs(client->address.sin_port);
+                    printf("Client %s:%d disconnected\n", ip, port); 
+                    Processing_server_detach_client(server, file_descriptor);
+                } else {
+                    buffer[n] = '\0';
+                    char ip[INET_ADDRSTRLEN];
+                    inet_ntop(AF_INET, &client->address.sin_addr, ip, sizeof(ip));
+                    unsigned short port = ntohs(client->address.sin_port);
+                    printf("[%s:%d]: %s", ip, port, buffer);
+                }
+            }
+
+            client = next;
+        }
     }
 }
 
 void ProcessingServer_destroy(ProcessingServer *server) {
+    ClientNode *current = server->clients;
+    while (current) {
+        ClientNode *next = current->next;
+        close(current->file_descriptor);
+        free(current);
+        current = next;
+    }
+
     if (server->listen_file_descriptor >= 0) {
         close(server->listen_file_descriptor);
     }
+
+    pthread_mutex_destroy(&server->mutex);
 }
 
-void ProcessingServer_handle_client(int client_file_descriptor, const struct sockaddr_in *client_addr) {
-    char ip[INET_ADDRSTRLEN];
+void ProcessingServer_attach_client(ProcessingServer *server, int file_descriptor, struct sockaddr_in *address) {
+    ClientNode *node = malloc(sizeof(ClientNode));
+    node->file_descriptor = file_descriptor;
+    node->address = *address;
+    node->next = server->clients;
+    server->clients = node;
+    ++server->client_count;
 
-    if (!inet_ntop(AF_INET, &client_addr->sin_addr, ip, sizeof(ip))) {
-        strcpy(ip, "unknown");
+    FD_SET(file_descriptor, &server->master_file_descriptor_set);
+    if (file_descriptor > server->max_file_descriptor) {
+        server->max_file_descriptor = file_descriptor;
     }
-    printf("Client connected: %s:%d\n", ip, ntohs(client_addr->sin_port));
+}
 
-    char buffer[BUFSIZ];
-    size_t buffer_used_size = 0;
-    while (1) {
-        int read_error = 0;
-        ssize_t bytes_read = safe_read(client_file_descriptor, buffer + buffer_used_size, sizeof(buffer) - 1 - buffer_used_size, &read_error);
-        
-        if (read_error != 0) {
-            perror("read");
+void Processing_server_detach_client(ProcessingServer *server, int file_descriptor) {
+    ClientNode **current = &server->clients;
+    while (*current) {
+        if ((*current)->file_descriptor == file_descriptor) {
+            ClientNode *tmp = *current;
+            *current = tmp->next;
+            close(tmp->file_descriptor);
+            free(tmp);
+            --server->client_count;
             break;
         }
-        
-        if (bytes_read < 0) {
-            break;
-        }
-        
-        if (bytes_read == 0) {
-            printf("Client %s disconnected\n", ip);
-            break;
-        }
-
-        buffer_used_size += (size_t) bytes_read;
-        buffer[buffer_used_size] = '\0';
-
-        char *start = buffer;
-        char *newline;
-        while ((newline = memchr(start, '\n', buffer_used_size - (start - buffer))) != NULL) {
-            *newline = '\0';
-            printf("[%s]: %s\n", ip, start);
-            start = newline + 1;
-        }
-
-        size_t remaining = buffer + buffer_used_size - start;
-        if (start != buffer) {
-            memmove(buffer, start, remaining);
-        }
-        buffer_used_size = remaining;
-        
-        if (buffer_used_size >= sizeof(buffer) - 1) {
-            fprintf(stderr, "Buffer overflow, discarding data\n");
-            buffer_used_size = 0;
-        }
+        current = &(*current)->next;
     }
-    
-    close(client_file_descriptor);
+
+    FD_CLR(file_descriptor, &server->master_file_descriptor_set);
+
+    if (file_descriptor == server->max_file_descriptor) {
+        int new_max = server->listen_file_descriptor;
+        for (ClientNode *current_ = server->clients; current_; current_ = current_->next) {
+            if (current_->file_descriptor > new_max) {
+                new_max = current_->file_descriptor;
+            }
+        }
+        server->max_file_descriptor = new_max;
+    }
 }
 

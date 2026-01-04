@@ -19,7 +19,6 @@ cmake_install.cmake
 Makefile
 
 *.dSYM/
-core
 core.*
 vgcore.*
 

@@ -3,7 +3,7 @@
 Client-server message relay in pure C.
 
 ## Architecture
-- DisplayServer: TCP server, accepts client connections and writes them in console
+- DisplayServer: TCP server, accepts client connections, receives clients' messages and writes them in console
 - Client: TCP client, connects to server and send text messages
 
 ## Build

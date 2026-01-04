@@ -119,9 +119,9 @@ void ProcessingServer_run(ProcessingServer *server) {
     }
 
     while (1) {
-        fd_set read_file_descriptor = server->master_file_descriptor_set;
+        fd_set read_file_descriptor_set = server->master_file_descriptor_set;
 
-        int is_ready = select(server->max_file_descriptor + 1, &read_file_descriptor, NULL, NULL, NULL);
+        int is_ready = select(server->max_file_descriptor + 1, &read_file_descriptor_set, NULL, NULL, NULL);
         if (is_ready < 0) {
             if (errno == EINTR) {
                 continue;
@@ -130,7 +130,7 @@ void ProcessingServer_run(ProcessingServer *server) {
             break;
         }
 
-        if (FD_ISSET(server->listen_file_descriptor, &read_file_descriptor)) {
+        if (FD_ISSET(server->listen_file_descriptor, &read_file_descriptor_set)) {
             struct sockaddr_in client_address;
             int error = 0;
             int client_fd = ProcessingServer_accept_connection(server->listen_file_descriptor, &client_address, &error);
@@ -150,7 +150,7 @@ void ProcessingServer_run(ProcessingServer *server) {
             int file_descriptor = client->file_descriptor;
             ClientNode *next = client->next;
 
-            if (FD_ISSET(file_descriptor, &read_file_descriptor)) {
+            if (FD_ISSET(file_descriptor, &read_file_descriptor_set)) {
                 char buffer[BUFSIZ];
                 int error = 0;
                 ssize_t n = safe_read(file_descriptor, buffer, sizeof(buffer) - 1, &error);

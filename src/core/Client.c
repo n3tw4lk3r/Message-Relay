@@ -10,7 +10,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-void client_init(Client *client, const char *server_ip, int port, int *error_flag) {
+void Client_init(Client *client, const char *server_ip, int port, int *error_flag) {
     if (error_flag) {
         *error_flag = 0;
     }
@@ -38,7 +38,7 @@ void client_init(Client *client, const char *server_ip, int port, int *error_fla
     }
 }
 
-void client_connect(Client *client, int *error_flag) {
+void Client_connect(Client *client, int *error_flag) {
     if (error_flag) {
         *error_flag = 0;
     }
@@ -77,7 +77,7 @@ void client_connect(Client *client, int *error_flag) {
     printf("Connected to server %s:%d\n", server_ip_string, ntohs(client->server_address.sin_port));
 }
 
-ssize_t client_send(Client *client, const char *message, size_t len, int *error_flag) {
+ssize_t Client_send(Client *client, const char *message, size_t len, int *error_flag) {
     if (error_flag) {
         *error_flag = 0;
     }
@@ -99,7 +99,7 @@ ssize_t client_send(Client *client, const char *message, size_t len, int *error_
     return result;
 }
 
-ssize_t client_receive(Client *client, char *buffer, size_t buffer_size, int *error_flag) {
+ssize_t Client_receive(Client *client, char *buffer, size_t buffer_size, int *error_flag) {
     if (error_flag) {
         *error_flag = 0;
     }
@@ -121,7 +121,7 @@ ssize_t client_receive(Client *client, char *buffer, size_t buffer_size, int *er
     return result;
 }
 
-void client_destroy(Client *client) {
+void Client_destroy(Client *client) {
     if (!client) {
         return;
     }
@@ -135,11 +135,11 @@ void client_destroy(Client *client) {
     memset(&client->server_address, 0, sizeof(client->server_address));
 }
 
-int client_is_connected(const Client *client) {
+int Client_is_connected(const Client *client) {
     return client && client->is_connected;
 }
 
-void client_run(Client *client) {
+void Client_run(Client *client) {
     printf("Type your messages (press Ctrl+D to exit):\n");
 
     int max_file_descriptor;
@@ -177,7 +177,7 @@ void client_run(Client *client) {
             }
 
             int send_error = 0;
-            ssize_t sent = client_send(client, buffer, length, &send_error);
+            ssize_t sent = Client_send(client, buffer, length, &send_error);
             if (send_error != 0 || sent < 0) {
                 perror("Failed to send message");
                 printf("Server disconnected\n");

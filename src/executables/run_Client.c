@@ -28,23 +28,23 @@ int main(int argc, char **argv) {
 
     Client client;
     int init_error = 0;
-    client_init(&client, server_ip, port, &init_error);
+    Client_init(&client, server_ip, port, &init_error);
     if (init_error != 0) {
         fprintf(stderr, "Failed to initialize client\n");
         return EXIT_FAILURE;
     }
 
     int connect_error = 0;
-    client_connect(&client, &connect_error);
+    Client_connect(&client, &connect_error);
     if (connect_error != 0) {
         fprintf(stderr, "Failed to connect to server\n");
-        client_destroy(&client);
+        Client_destroy(&client);
         return EXIT_FAILURE;
     }
 
     printf("Connected to %s:%d\n", server_ip, port);
-    client_run(&client);
+    Client_run(&client);
 
-    client_destroy(&client);
+    Client_destroy(&client);
     return EXIT_SUCCESS;
 }

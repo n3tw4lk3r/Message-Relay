@@ -154,24 +154,24 @@ void ProcessingServer_run(ProcessingServer *server) {
             if (FD_ISSET(file_descriptor, &read_file_descriptor_set)) {
                 char buffer[BUFSIZ];
                 int error = 0;
-                ssize_t read = safe_read(file_descriptor, buffer, sizeof(buffer) - 1, &error);
+                ssize_t bytes_read = safe_read(file_descriptor, buffer, sizeof(buffer) - 1, &error);
 
-                if (read <= 0 || error) {
+                if (bytes_read <= 0 || error) {
                     char ip[INET_ADDRSTRLEN];
                     inet_ntop(AF_INET, &client->address.sin_addr, ip, sizeof(ip));
                     unsigned short port = ntohs(client->address.sin_port);
                     printf("Client %s:%d disconnected\n", ip, port); 
                     Processing_server_detach_client(server, file_descriptor);
                 } else {
-                    buffer[read] = '\0';
+                    buffer[bytes_read] = '\0';
                     char ip[INET_ADDRSTRLEN];
                     inet_ntop(AF_INET, &client->address.sin_addr, ip, sizeof(ip));
                     unsigned short port = ntohs(client->address.sin_port);
                     
                     char message_buffer[BUFSIZ];
                     size_t length;
-                    if (read < MAX_MESSAGE_LENGTH) {
-                        length =  read;
+                    if (bytes_read < MAX_MESSAGE_LENGTH) {
+                        length =  bytes_read;
                     } else {
                         length = MAX_MESSAGE_LENGTH;
                     }

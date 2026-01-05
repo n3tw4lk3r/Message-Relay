@@ -5,7 +5,8 @@
 #include <sys/select.h>
 
 enum {
-    LISTEN_BACKLOG = 10
+    LISTEN_BACKLOG = 10,
+    MAX_MESSAGE_LENGTH = 8000
 };
 
 typedef struct ClientNode ClientNode; // for internal use
@@ -27,3 +28,4 @@ void ProcessingServer_run(ProcessingServer *server);
 void ProcessingServer_destroy(ProcessingServer *server);
 void ProcessingServer_attach_client(ProcessingServer *server, int file_descriptor, struct sockaddr_in *address);
 void Processing_server_detach_client(ProcessingServer *server, int file_descriptor);
+void Processing_server_broadcast(ProcessingServer *server, const char *message, size_t message_length);

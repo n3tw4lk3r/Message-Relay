@@ -113,6 +113,7 @@ int ProcessingServer_accept_connection(int listen_file_descriptor, struct sockad
         return file_descriptor;
     }
 }
+
 void ProcessingServer_run(ProcessingServer *server) {
     if (!server) {
         return;
@@ -166,7 +167,18 @@ void ProcessingServer_run(ProcessingServer *server) {
                     char ip[INET_ADDRSTRLEN];
                     inet_ntop(AF_INET, &client->address.sin_addr, ip, sizeof(ip));
                     unsigned short port = ntohs(client->address.sin_port);
-                    printf("[%s:%d]: %s", ip, port, buffer);
+                    
+                    char message_buffer[BUFSIZ];
+                    size_t length;
+                    if (n < MAX_MESSAGE_LENGTH) {
+                        length =  n;
+                    } else {
+                        length = MAX_MESSAGE_LENGTH;
+                    }
+                    snprintf(message_buffer, sizeof(message_buffer), "[%s:%d]: %.*s", ip, port, (int) length, buffer);
+                    printf("%s", message_buffer);
+
+                    Processing_server_broadcast(server, message_buffer, strlen(message_buffer));
                 }
             }
 
@@ -232,3 +244,30 @@ void Processing_server_detach_client(ProcessingServer *server, int file_descript
     }
 }
 
+void Processing_server_broadcast(ProcessingServer *server, const char *message, size_t message_length) {
+    ClientNode *current = server->clients;
+    ClientNode *next;
+
+    while (current) {
+        next = current->next;
+        
+        size_t sent = 0;
+        while (sent < message_length) {
+            ssize_t current_sent = send(current->file_descriptor, message + sent, message_length - sent, 0);
+            if (current_sent == 0) {
+                Processing_server_detach_client(server, current->file_descriptor);
+                break;
+            }
+            if (current_sent < 0) {
+                if (errno == EPIPE || errno == ECONNRESET || errno == ECONNABORTED) {
+                    Processing_server_detach_client(server, current->file_descriptor);
+                } else {
+                    perror("send");
+                }
+                break;
+            }
+            sent += current_sent;
+        }
+        current = next;
+    }
+}

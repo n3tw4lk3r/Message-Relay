@@ -14,3 +14,4 @@ ssize_t client_send(Client *client, const char *message, size_t len, int *error_
 ssize_t client_receive(Client *client, char *buffer, size_t buffer_size, int *error_flag);
 void client_destroy(Client *client);
 int client_is_connected(const Client *client);
+void client_run(Client *client);

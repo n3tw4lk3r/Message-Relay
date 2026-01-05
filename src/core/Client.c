@@ -1,9 +1,12 @@
 #include "core/Client.h"
 #include "utils/safe_io.h"
 #include <arpa/inet.h>
+#include <errno.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -134,4 +137,63 @@ void client_destroy(Client *client) {
 
 int client_is_connected(const Client *client) {
     return client && client->is_connected;
+}
+
+void client_run(Client *client) {
+    printf("Type your messages (press Ctrl+D to exit):\n");
+
+    int max_file_descriptor;
+    if (client->socket_file_descriptor > STDIN_FILENO) {
+        max_file_descriptor = client->socket_file_descriptor;
+    } else {
+        max_file_descriptor = STDIN_FILENO;
+    }
+    
+    char buffer[BUFSIZ];
+    while (1) {
+        fd_set read_file_descriptor_set;
+        FD_ZERO(&read_file_descriptor_set);
+        FD_SET(STDIN_FILENO, &read_file_descriptor_set);
+        FD_SET(client->socket_file_descriptor, &read_file_descriptor_set);
+
+        int ready = select(max_file_descriptor + 1, &read_file_descriptor_set, NULL, NULL, NULL);
+        if (ready < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            perror("select");
+            break;
+        }
+
+        if (FD_ISSET(STDIN_FILENO, &read_file_descriptor_set)) {
+            if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
+                printf("Exiting\n");
+                break;
+            }
+
+            size_t length = strlen(buffer);
+            if (length == 0) {
+                continue;
+            }
+
+            int send_error = 0;
+            ssize_t sent = client_send(client, buffer, length, &send_error);
+            if (send_error != 0 || sent < 0) {
+                perror("Failed to send message");
+                printf("Server disconnected\n");
+                break;
+            }
+        }
+
+        if (FD_ISSET(client->socket_file_descriptor, &read_file_descriptor_set)) {
+            ssize_t received = recv(client->socket_file_descriptor, buffer, sizeof(buffer) - 1, 0);
+            if (received <= 0) {
+                printf("Server disconnected\n");
+                break;
+            }
+            buffer[received] = '\0';
+            printf("%s", buffer);
+        }
+    }
+
 }

@@ -10,6 +10,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "core/Console.h"
+
 void Client_init(Client *client, const char *server_ip, int port, int *error_flag) {
     if (error_flag) {
         *error_flag = 0;
@@ -140,8 +142,6 @@ int Client_is_connected(const Client *client) {
 }
 
 void Client_run(Client *client) {
-    printf("Type your messages (press Ctrl+D to exit):\n");
-
     int max_file_descriptor;
     if (client->socket_file_descriptor > STDIN_FILENO) {
         max_file_descriptor = client->socket_file_descriptor;
@@ -150,7 +150,18 @@ void Client_run(Client *client) {
     }
     
     char buffer[BUFSIZ];
-    while (1) {
+    Console console;
+
+    Console_init(&console);
+    clear_screen();
+    hide_cursor();
+    for (int i = 0; i < MAX_MESSAGES; ++i) {
+        Console_add_message(&console, "");
+    }
+    Console_render(&console);
+    
+    int is_running = 1;
+    while (is_running) {
         fd_set read_file_descriptor_set;
         FD_ZERO(&read_file_descriptor_set);
         FD_SET(STDIN_FILENO, &read_file_descriptor_set);
@@ -167,13 +178,14 @@ void Client_run(Client *client) {
 
         if (FD_ISSET(STDIN_FILENO, &read_file_descriptor_set)) {
             if (fgets(buffer, sizeof(buffer), stdin) == NULL) {
-                printf("Exiting\n");
+                is_running = 0;
                 break;
             }
 
             size_t length = strlen(buffer);
-            if (length == 0) {
-                continue;
+            if (strcmp(buffer, "exit()\n") == 0) {
+                is_running = 0;
+                break;
             }
 
             int send_error = 0;
@@ -189,11 +201,18 @@ void Client_run(Client *client) {
             ssize_t received = recv(client->socket_file_descriptor, buffer, sizeof(buffer) - 1, 0);
             if (received <= 0) {
                 printf("Server disconnected\n");
+                is_running = 0;
                 break;
             }
             buffer[received] = '\0';
-            printf("%s", buffer);
+            Console_add_message(&console, buffer);
+            Console_render(&console);
         }
     }
 
+    move_cursor(AT_EXIT_MESSAGE_ROW, 1);
+    reset_terminal();
+    show_cursor();
+    printf("Exited successfully.\n");
 }
+

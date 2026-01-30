@@ -145,7 +145,11 @@ int Client_is_connected(const Client *client) {
     return client && client->is_connected;
 }
 
-void Client_run(Client *client) {
+void Client_run(Client *client, int *error_flag) {
+    if (error_flag) {
+        *error_flag = 0;
+    }
+
     int max_file_descriptor;
     if (client->socket_file_descriptor > STDIN_FILENO) {
         max_file_descriptor = client->socket_file_descriptor;
@@ -154,15 +158,20 @@ void Client_run(Client *client) {
     }
     
     char buffer[BUFSIZ];
-    Console console;
 
-    Console_init(&console);
+    int create_console_error = 0;
+    Console *console = Console_create(&create_console_error);
+    if (create_console_error) {
+        *error_flag = 1;
+        return;
+    }
+
     clear_screen();
     hide_cursor();
     for (int i = 0; i < MAX_MESSAGES; ++i) {
-        Console_add_message(&console, "");
+        Console_add_message(console, "");
     }
-    Console_render(&console);
+    Console_render(console);
     
     int is_running = 1;
     while (is_running) {
@@ -209,8 +218,8 @@ void Client_run(Client *client) {
                 break;
             }
             buffer[received] = '\0';
-            Console_add_message(&console, buffer);
-            Console_render(&console);
+            Console_add_message(console, buffer);
+            Console_render(console);
         }
     }
 

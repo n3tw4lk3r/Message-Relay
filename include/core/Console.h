@@ -13,12 +13,10 @@ enum {
     AT_EXIT_MESSAGE_ROW = 13 // row for message after user exited
 };
 
-typedef struct {
-    char messages[MAX_MESSAGES][MAX_MESSAGE_LENGTH];
-    int count;
-} Console;
+typedef struct Console Console;
 
-void Console_init(Console *console);
+Console *Console_create(int *error_flag);
+
 void Console_add_message(Console *console, const char *message);
 void Console_render(const Console *console);
 

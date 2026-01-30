@@ -6,15 +6,28 @@
 
 #include "utils/ANSI.h"
 
-void Console_init(Console *console) {
-    if (console == NULL) {
-        return;
+struct Console {
+    char messages[MAX_MESSAGES][MAX_MESSAGE_LENGTH];
+    int count;
+};
+
+Console *Console_create(int *error_flag) {
+    if (error_flag) {
+        *error_flag = 0;
     }
-    
+
+    Console *console = calloc(1, sizeof(Console));
+    if (!console) {
+        *error_flag = 0;
+        return NULL;
+    }
+
     for (int i = 0; i < MAX_MESSAGES; ++i) {
         console->messages[i][0] = '\0';
     }
     console->count = 0;
+    
+    return console;
 }
 
 void Console_add_message(Console *console, const char *message) {

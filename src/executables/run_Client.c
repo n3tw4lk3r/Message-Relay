@@ -42,7 +42,11 @@ int main(int argc, char **argv) {
     }
 
     printf("Connected to %s:%d\n", server_ip, port);
-    Client_run(client);
+    int run_client_error = 0;
+    Client_run(client, &run_client_error);
+    if (run_client_error) {
+        return EXIT_FAILURE;
+    }
 
     Client_destroy(client);
 

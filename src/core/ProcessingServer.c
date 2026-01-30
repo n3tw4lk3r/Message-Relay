@@ -10,25 +10,46 @@
 #include "core/ProcessingServer.h"
 #include "utils/safe_io.h"
 
+enum {
+    LISTEN_BACKLOG = 10,
+    MAX_MESSAGE_LENGTH = 8000
+};
+
+typedef struct ClientNode ClientNode;
+
 struct ClientNode {
     int file_descriptor;
     struct sockaddr_in address;
     struct ClientNode *next;
 };
 
-void ProcessingServer_init(ProcessingServer *server, int port, int *error_flag) {
+struct ProcessingServer {
+    int listen_file_descriptor;
+    ClientNode *clients;
+    int client_count;
+    pthread_mutex_t mutex;
+    fd_set master_file_descriptor_set;
+    int max_file_descriptor;
+    int port;
+};
+
+ProcessingServer *ProcessingServer_create(int port, int *error_flag) {
     if (error_flag) {
         *error_flag = 0;
     }
 
-    if (!server || port <= 0 || port > 65535) {
+    if (port <= 0 || port > 65535) {
         if (error_flag) {
             *error_flag = 1;
         }
-        return;
+        return NULL;
     }
-
-    memset(server, 0, sizeof(*server));
+    
+    ProcessingServer *server = calloc(1, sizeof(ProcessingServer));
+    if (!server) {
+        *error_flag = 1;
+        return NULL;
+    }
     server->port = port;
 
     server->listen_file_descriptor = ProcessingServer_create_listening_socket(port, error_flag);
@@ -37,7 +58,7 @@ void ProcessingServer_init(ProcessingServer *server, int port, int *error_flag) 
         if (error_flag) {
             *error_flag = 1;
         }
-        return;
+        return NULL;
     }
 
     FD_ZERO(&server->master_file_descriptor_set);
@@ -45,6 +66,7 @@ void ProcessingServer_init(ProcessingServer *server, int port, int *error_flag) 
     server->max_file_descriptor = server->listen_file_descriptor;
 
     pthread_mutex_init(&server->mutex, NULL);
+    return server;
 }
 
 int ProcessingServer_create_listening_socket(int port, int *error_flag) {

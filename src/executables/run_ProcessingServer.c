@@ -19,21 +19,19 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Invalid port\n");
         return EXIT_FAILURE;
     }
-
-    ProcessingServer server = { .listen_file_descriptor = -1 };
-
-    int init_error = 0;
-    ProcessingServer_init(&server, port, &init_error);
     
-    if (init_error != 0) {
-        perror("server init");
+    int create_error = 0;
+    ProcessingServer *server = ProcessingServer_create(port, &create_error);
+    
+    if (create_error != 0) {
+        perror("ProcessingServer_create error");
         return EXIT_FAILURE;
     }
 
     printf("Server listening on port %d\n", port);
 
-    ProcessingServer_run(&server);
-    ProcessingServer_destroy(&server);
+    ProcessingServer_run(server);
+    ProcessingServer_destroy(server);
 
     return EXIT_SUCCESS;
 }

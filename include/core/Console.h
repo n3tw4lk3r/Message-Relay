@@ -7,9 +7,9 @@
 #include "utils/ANSI.h"
 
 enum {
-    MAX_MESSAGES = 10, // maximum number of messages in history
-    MAX_MESSAGE_LENGTH = 100, // maximum length of a single message
-    PROMPT_ROW = MAX_MESSAGES + 2,
+    MAX_MESSAGES_COUNT = 10,
+    MAX_MESSAGE_LENGTH = 100,
+    PROMPT_ROW = MAX_MESSAGES_COUNT + 2,
     AT_EXIT_MESSAGE_ROW = 13 // row for message after user exited
 };
 

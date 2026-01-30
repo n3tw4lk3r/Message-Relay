@@ -12,32 +12,38 @@
 
 #include "core/Console.h"
 
-void Client_init(Client *client, const char *server_ip, int port, int *error_flag) {
+struct Client {
+    int socket_file_descriptor;
+    struct sockaddr_in server_address;
+    int is_connected;
+};
+
+Client *Client_create(const char *server_ip, int port, int *error_flag) {
     if (error_flag) {
         *error_flag = 0;
     }
     
-    if (!client || !server_ip || port <= 0 || port > 65535) {
+    if (!server_ip || port <= 0 || port > 65535) {
         if (error_flag) {
             *error_flag = 1;
         }
-        return;
+        return NULL;
     }
 
-    memset(client, 0, sizeof(Client));
-
+    Client *client = calloc(1, sizeof(Client));
     client->socket_file_descriptor = -1;
     client->is_connected = 0;
     client->server_address.sin_family = AF_INET;
     client->server_address.sin_port = htons((uint16_t) port);
-    
+
     if (inet_pton(AF_INET, server_ip, &client->server_address.sin_addr) != 1) {
         fprintf(stderr, "Invalid IP address: %s\n", server_ip);
         if (error_flag) {
             *error_flag = 1;
         }
-        return;
+        return NULL;
     }
+    return client;
 }
 
 void Client_connect(Client *client, int *error_flag) {
@@ -130,11 +136,9 @@ void Client_destroy(Client *client) {
     
     if (client->socket_file_descriptor >= 0) {
         close(client->socket_file_descriptor);
-        client->socket_file_descriptor = -1;
     }
     
-    client->is_connected = 0;
-    memset(&client->server_address, 0, sizeof(client->server_address));
+    free(client);
 }
 
 int Client_is_connected(const Client *client) {

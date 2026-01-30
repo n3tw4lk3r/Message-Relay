@@ -2,16 +2,15 @@
 
 #include <netinet/in.h>
 
-typedef struct {
-    int socket_file_descriptor;
-    struct sockaddr_in server_address;
-    int is_connected;
-} Client;
+typedef struct Client Client;
 
-void Client_init(Client *client, const char *server_ip, int port, int *error_flag);
+Client *Client_create(const char *server_ip, int port, int *error_flag);
+void Client_destroy(Client *client);
+
 void Client_connect(Client *client, int *error_flag);
+int Client_is_connected(const Client *client);
+
 ssize_t Client_send(Client *client, const char *message, size_t len, int *error_flag);
 ssize_t Client_receive(Client *client, char *buffer, size_t buffer_size, int *error_flag);
-void Client_destroy(Client *client);
-int Client_is_connected(const Client *client);
+
 void Client_run(Client *client);

@@ -7,9 +7,9 @@
 #include "utils/ANSI.h"
 
 enum {
-    MAX_MESSAGES_COUNT = 10,
+    MESSAGES_DISPLAYED = 10,
     MAX_MESSAGE_LENGTH = 100,
-    PROMPT_ROW = MAX_MESSAGES_COUNT + 2,
+    PROMPT_ROW = MESSAGES_DISPLAYED + 2,
     AT_EXIT_MESSAGE_ROW = 13 // row for message after user exited
 };
 

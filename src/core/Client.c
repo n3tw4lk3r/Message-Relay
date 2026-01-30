@@ -173,7 +173,7 @@ void Client_run(Client *client, int *error_flag) {
 
     clear_screen();
     hide_cursor();
-    for (int i = 0; i < MAX_MESSAGES_COUNT; ++i) {
+    for (int i = 0; i < MESSAGES_DISPLAYED; ++i) {
         Console_add_message(console, "");
     }
     Console_render(console);

@@ -31,6 +31,11 @@ Client *Client_create(const char *server_ip, int port, int *error_flag) {
     }
 
     Client *client = calloc(1, sizeof(Client));
+    if (!client) {
+        *error_flag = 1;
+        return NULL;
+    }
+
     client->socket_file_descriptor = -1;
     client->is_connected = 0;
     client->server_address.sin_family = AF_INET;

@@ -97,8 +97,10 @@ ProcessingServer *ProcessingServer_create(int port, int *error_flag) {
         *error_flag = 1;
         return NULL;
     }
-
+    
     server->port = port;
+    server->clients = NULL;
+    server->client_count = 0;
     server->listen_file_descriptor = ProcessingServer_create_listening_socket(port, error_flag);
 
     if (server->listen_file_descriptor < 0) {

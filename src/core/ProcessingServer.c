@@ -193,6 +193,7 @@ void ProcessingServer_broadcast(ProcessingServer *server, const char *message, s
             }
             if (current_sent < 0) {
                 if (errno == EPIPE || errno == ECONNRESET || errno == ECONNABORTED) {
+                    close(current->file_descriptor);
                     Processing_server_detach_client(server, current->file_descriptor);
                 } else {
                     perror("send");

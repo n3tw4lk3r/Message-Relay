@@ -29,8 +29,13 @@ int main(int argc, char **argv) {
     }
 
     printf("Server listening on port %d\n", port);
+    
+    int error_flag = 0;
+    ProcessingServer_run(server, &error_flag);
+    if (error_flag) {
+        return EXIT_FAILURE;
+    }
 
-    ProcessingServer_run(server);
     ProcessingServer_destroy(server);
 
     return EXIT_SUCCESS;

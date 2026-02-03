@@ -9,5 +9,5 @@ typedef struct ProcessingServer ProcessingServer;
 ProcessingServer *ProcessingServer_create(int port, int *error_flag);
 void ProcessingServer_destroy(ProcessingServer *server);
 
-void ProcessingServer_run(ProcessingServer *server);
+void ProcessingServer_run(ProcessingServer *server, int *error_flag);
 

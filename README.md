@@ -31,5 +31,9 @@ src/run_Client 127.0.0.1 8080
 ```
 
 ## Features To Implement
-- Use epoll instead of select
+- Implement nickname system
+- Create private messages system
+- Use encryption
+- Use epoll instead of select?
 - Implement some sort of processing messages in ProcessingServer
+

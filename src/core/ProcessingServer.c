@@ -80,6 +80,20 @@ int ProcessingServer_create_listening_socket(int port, int *error_flag) {
     return file_descriptor;
 }
 
+void ProcessingServer_attach_client(ProcessingServer *server, int file_descriptor, struct sockaddr_in *address) {
+    ClientNode *node = malloc(sizeof(ClientNode));
+    node->file_descriptor = file_descriptor;
+    node->address = *address;
+    node->next = server->clients;
+    server->clients = node;
+    ++server->client_count;
+
+    FD_SET(file_descriptor, &server->master_file_descriptor_set);
+    if (file_descriptor > server->max_file_descriptor) {
+        server->max_file_descriptor = file_descriptor;
+    }
+}
+
 ProcessingServer *ProcessingServer_create(int port, int *error_flag) {
     if (error_flag) {
         *error_flag = 0;
@@ -224,20 +238,6 @@ void ProcessingServer_destroy(ProcessingServer *server) {
     }
 
     pthread_mutex_destroy(&server->mutex);
-}
-
-void ProcessingServer_attach_client(ProcessingServer *server, int file_descriptor, struct sockaddr_in *address) {
-    ClientNode *node = malloc(sizeof(ClientNode));
-    node->file_descriptor = file_descriptor;
-    node->address = *address;
-    node->next = server->clients;
-    server->clients = node;
-    ++server->client_count;
-
-    FD_SET(file_descriptor, &server->master_file_descriptor_set);
-    if (file_descriptor > server->max_file_descriptor) {
-        server->max_file_descriptor = file_descriptor;
-    }
 }
 
 void Processing_server_detach_client(ProcessingServer *server, int file_descriptor) {

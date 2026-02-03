@@ -80,6 +80,42 @@ int ProcessingServer_create_listening_socket(int port, int *error_flag) {
     return file_descriptor;
 }
 
+ProcessingServer *ProcessingServer_create(int port, int *error_flag) {
+    if (error_flag) {
+        *error_flag = 0;
+    }
+
+    if (port <= 0 || port > 65535) {
+        if (error_flag) {
+            *error_flag = 1;
+        }
+        return NULL;
+    }
+    
+    ProcessingServer *server = calloc(1, sizeof(ProcessingServer));
+    if (!server) {
+        *error_flag = 1;
+        return NULL;
+    }
+    server->port = port;
+
+    server->listen_file_descriptor = ProcessingServer_create_listening_socket(port, error_flag);
+
+    if (server->listen_file_descriptor < 0) {
+        if (error_flag) {
+            *error_flag = 1;
+        }
+        return NULL;
+    }
+
+    FD_ZERO(&server->master_file_descriptor_set);
+    FD_SET(server->listen_file_descriptor, &server->master_file_descriptor_set);
+    server->max_file_descriptor = server->listen_file_descriptor;
+
+    pthread_mutex_init(&server->mutex, NULL);
+    return server;
+}
+
 void ProcessingServer_attach_client(ProcessingServer *server, int file_descriptor, struct sockaddr_in *address) {
     ClientNode *node = malloc(sizeof(ClientNode));
     node->file_descriptor = file_descriptor;
@@ -120,43 +156,6 @@ void Processing_server_detach_client(ProcessingServer *server, int file_descript
         server->max_file_descriptor = new_max;
     }
 }
-
-ProcessingServer *ProcessingServer_create(int port, int *error_flag) {
-    if (error_flag) {
-        *error_flag = 0;
-    }
-
-    if (port <= 0 || port > 65535) {
-        if (error_flag) {
-            *error_flag = 1;
-        }
-        return NULL;
-    }
-    
-    ProcessingServer *server = calloc(1, sizeof(ProcessingServer));
-    if (!server) {
-        *error_flag = 1;
-        return NULL;
-    }
-    server->port = port;
-
-    server->listen_file_descriptor = ProcessingServer_create_listening_socket(port, error_flag);
-
-    if (server->listen_file_descriptor < 0) {
-        if (error_flag) {
-            *error_flag = 1;
-        }
-        return NULL;
-    }
-
-    FD_ZERO(&server->master_file_descriptor_set);
-    FD_SET(server->listen_file_descriptor, &server->master_file_descriptor_set);
-    server->max_file_descriptor = server->listen_file_descriptor;
-
-    pthread_mutex_init(&server->mutex, NULL);
-    return server;
-}
-
 
 int ProcessingServer_accept_connection(int listen_file_descriptor, struct sockaddr_in *client_address, int *error_flag) {
     if (error_flag) {

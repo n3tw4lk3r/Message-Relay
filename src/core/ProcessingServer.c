@@ -94,6 +94,33 @@ void ProcessingServer_attach_client(ProcessingServer *server, int file_descripto
     }
 }
 
+void Processing_server_detach_client(ProcessingServer *server, int file_descriptor) {
+    ClientNode **current = &server->clients;
+    while (*current) {
+        if ((*current)->file_descriptor == file_descriptor) {
+            ClientNode *tmp = *current;
+            *current = tmp->next;
+            close(tmp->file_descriptor);
+            free(tmp);
+            --server->client_count;
+            break;
+        }
+        current = &(*current)->next;
+    }
+
+    FD_CLR(file_descriptor, &server->master_file_descriptor_set);
+
+    if (file_descriptor == server->max_file_descriptor) {
+        int new_max = server->listen_file_descriptor;
+        for (ClientNode *current_ = server->clients; current_; current_ = current_->next) {
+            if (current_->file_descriptor > new_max) {
+                new_max = current_->file_descriptor;
+            }
+        }
+        server->max_file_descriptor = new_max;
+    }
+}
+
 ProcessingServer *ProcessingServer_create(int port, int *error_flag) {
     if (error_flag) {
         *error_flag = 0;
@@ -238,33 +265,6 @@ void ProcessingServer_destroy(ProcessingServer *server) {
     }
 
     pthread_mutex_destroy(&server->mutex);
-}
-
-void Processing_server_detach_client(ProcessingServer *server, int file_descriptor) {
-    ClientNode **current = &server->clients;
-    while (*current) {
-        if ((*current)->file_descriptor == file_descriptor) {
-            ClientNode *tmp = *current;
-            *current = tmp->next;
-            close(tmp->file_descriptor);
-            free(tmp);
-            --server->client_count;
-            break;
-        }
-        current = &(*current)->next;
-    }
-
-    FD_CLR(file_descriptor, &server->master_file_descriptor_set);
-
-    if (file_descriptor == server->max_file_descriptor) {
-        int new_max = server->listen_file_descriptor;
-        for (ClientNode *current_ = server->clients; current_; current_ = current_->next) {
-            if (current_->file_descriptor > new_max) {
-                new_max = current_->file_descriptor;
-            }
-        }
-        server->max_file_descriptor = new_max;
-    }
 }
 
 void Processing_server_broadcast(ProcessingServer *server, const char *message, size_t message_length) {

@@ -231,6 +231,7 @@ void Client_run(Client *client, int *error_flag) {
     move_cursor(AT_EXIT_MESSAGE_ROW, 1);
     reset_terminal();
     show_cursor();
+    Console_destroy(console);
     printf("Exited successfully.\n");
 }
 

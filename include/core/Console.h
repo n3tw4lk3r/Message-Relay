@@ -16,6 +16,7 @@ enum {
 typedef struct Console Console;
 
 Console *Console_create(int *error_flag);
+void Console_destroy(Console *console);
 
 void Console_add_message(Console *console, const char *message);
 void Console_render(const Console *console);

@@ -30,6 +30,12 @@ Console *Console_create(int *error_flag) {
     return console;
 }
 
+void Console_destroy(Console *console) {
+    if (console) {
+        free(console);
+    }
+}
+
 void Console_add_message(Console *console, const char *message) {
     if (console == NULL || message == NULL) {
         return;

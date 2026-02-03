@@ -344,6 +344,7 @@ void ProcessingServer_run(ProcessingServer *server, int *error_flag) {
     reset_terminal();
     show_cursor();
     printf("Server stopped successfully.\n");
+    Console_destroy(console);
 }
 
 void ProcessingServer_destroy(ProcessingServer *server) {

@@ -20,7 +20,7 @@ typedef struct ClientNode ClientNode;
 struct ClientNode {
     int file_descriptor;
     struct sockaddr_in address;
-    struct ClientNode *next;
+    ClientNode *next;
 };
 
 struct ProcessingServer {

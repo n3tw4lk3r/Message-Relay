@@ -349,8 +349,6 @@ void ProcessingServer_run(ProcessingServer *server, int *error_flag) {
 }
 
 void ProcessingServer_destroy(ProcessingServer *server) {
-    FD_CLR(STDIN_FILENO, &server->master_file_descriptor_set);
-
     ClientNode *current = server->clients;
     while (current) {
         ClientNode *next = current->next;
@@ -364,5 +362,6 @@ void ProcessingServer_destroy(ProcessingServer *server) {
     }
 
     pthread_mutex_destroy(&server->mutex);
+    free(server);
 }
 

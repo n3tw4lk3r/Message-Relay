@@ -27,7 +27,6 @@ struct ProcessingServer {
     int listen_file_descriptor;
     ClientNode *clients;
     int client_count;
-    pthread_mutex_t mutex;
     fd_set master_file_descriptor_set;
     int max_file_descriptor;
     int port;
@@ -114,7 +113,6 @@ ProcessingServer *ProcessingServer_create(int port, int *error_flag) {
     FD_SET(server->listen_file_descriptor, &server->master_file_descriptor_set);
     server->max_file_descriptor = server->listen_file_descriptor;
 
-    pthread_mutex_init(&server->mutex, NULL);
     return server;
 }
 
@@ -363,7 +361,6 @@ void ProcessingServer_destroy(ProcessingServer *server) {
         close(server->listen_file_descriptor);
     }
 
-    pthread_mutex_destroy(&server->mutex);
     free(server);
 }
 

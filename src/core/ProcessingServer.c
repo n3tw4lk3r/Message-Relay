@@ -93,7 +93,9 @@ ProcessingServer *ProcessingServer_create(int port, int *error_flag) {
     
     ProcessingServer *server = calloc(1, sizeof(ProcessingServer));
     if (!server) {
-        *error_flag = 1;
+        if (error_flag) {
+            *error_flag = 1;
+        }
         return NULL;
     }
     
@@ -219,7 +221,9 @@ void ProcessingServer_run(ProcessingServer *server, int *error_flag) {
     int create_console_error = 0;
     Console *console = Console_create(&create_console_error);
     if (create_console_error) {
-        *error_flag = 1;
+        if (error_flag) {
+            *error_flag = 1;
+        }
         return;
     }
 

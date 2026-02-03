@@ -178,6 +178,34 @@ int ProcessingServer_accept_connection(int listen_file_descriptor, struct sockad
     }
 }
 
+void ProcessingServer_broadcast(ProcessingServer *server, const char *message, size_t message_length) {
+    ClientNode *current = server->clients;
+    ClientNode *next;
+
+    while (current) {
+        next = current->next;
+        
+        size_t sent = 0;
+        while (sent < message_length) {
+            ssize_t current_sent = send(current->file_descriptor, message + sent, message_length - sent, 0);
+            if (current_sent == 0) {
+                Processing_server_detach_client(server, current->file_descriptor);
+                break;
+            }
+            if (current_sent < 0) {
+                if (errno == EPIPE || errno == ECONNRESET || errno == ECONNABORTED) {
+                    Processing_server_detach_client(server, current->file_descriptor);
+                } else {
+                    perror("send");
+                }
+                break;
+            }
+            sent += current_sent;
+        }
+        current = next;
+    }
+}
+
 void ProcessingServer_run(ProcessingServer *server) {
     if (!server) {
         return;
@@ -242,7 +270,7 @@ void ProcessingServer_run(ProcessingServer *server) {
                     snprintf(message_buffer, sizeof(message_buffer), "[%s:%d]: %.*s", ip, port, (int) length, buffer);
                     printf("%s", message_buffer);
 
-                    Processing_server_broadcast(server, message_buffer, strlen(message_buffer));
+                    ProcessingServer_broadcast(server, message_buffer, strlen(message_buffer));
                 }
             }
 
@@ -267,30 +295,3 @@ void ProcessingServer_destroy(ProcessingServer *server) {
     pthread_mutex_destroy(&server->mutex);
 }
 
-void Processing_server_broadcast(ProcessingServer *server, const char *message, size_t message_length) {
-    ClientNode *current = server->clients;
-    ClientNode *next;
-
-    while (current) {
-        next = current->next;
-        
-        size_t sent = 0;
-        while (sent < message_length) {
-            ssize_t current_sent = send(current->file_descriptor, message + sent, message_length - sent, 0);
-            if (current_sent == 0) {
-                Processing_server_detach_client(server, current->file_descriptor);
-                break;
-            }
-            if (current_sent < 0) {
-                if (errno == EPIPE || errno == ECONNRESET || errno == ECONNABORTED) {
-                    Processing_server_detach_client(server, current->file_descriptor);
-                } else {
-                    perror("send");
-                }
-                break;
-            }
-            sent += current_sent;
-        }
-        current = next;
-    }
-}

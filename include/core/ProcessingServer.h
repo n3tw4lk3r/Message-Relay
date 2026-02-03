@@ -11,4 +11,3 @@ void ProcessingServer_destroy(ProcessingServer *server);
 
 void ProcessingServer_run(ProcessingServer *server);
 
-void Processing_server_broadcast(ProcessingServer *server, const char *message, size_t message_length);

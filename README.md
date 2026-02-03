@@ -12,7 +12,7 @@ Client-server message relay in C.
 ![Demonstration With Two Clients](assets/images/two-clients-demo.png)
 
 ## Architecture
-- ProcessingServer: TCP server, accepts client connections, receives clients messages, writes them in console and broadcasts them to all connected clients
+- ProcessingServer: TCP server, accepts client connections, receives clients messages, writes them in console and broadcasts them to all connected clients. Can broadcast custom messages.
 - Client: TCP client, connects to ProcessingServer and sends text messages
 
 

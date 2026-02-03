@@ -18,7 +18,7 @@ Console *Console_create(int *error_flag) {
 
     Console *console = calloc(1, sizeof(Console));
     if (!console) {
-        *error_flag = 0;
+        *error_flag = 1;
         return NULL;
     }
 
